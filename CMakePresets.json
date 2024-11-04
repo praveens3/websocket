@@ -1,0 +1,32 @@
+{
+    "version": 3,
+    "configurePresets": [
+      {
+        "name": "vs2022-debug",
+        "description": "Debug configuration with Visual Studio 2022",
+        "hidden": false,
+        "generator": "Visual Studio 17 2022",
+        "binaryDir": "${sourceDir}/build"
+      },
+      {
+        "name": "vs2022-release",
+        "description": "Release configuration with Visual Studio 2022",
+        "hidden": false,
+        "generator": "Visual Studio 17 2022",
+        "binaryDir": "${sourceDir}/build"
+      }
+    ],
+    "buildPresets": [
+      {
+        "name": "vs2022-debug",
+        "configurePreset": "vs2022-debug",
+        "configuration": "Debug"
+      },
+      {
+        "name": "vs2022-release",
+        "configurePreset": "vs2022-release",
+        "configuration": "Release"
+      }
+    ]
+  }
+  
