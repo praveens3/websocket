@@ -1,2 +1,6 @@
 build/**
 CmakeUserPresets.json
+*.pem
+.git*
+*.code-workspace
+FBSHandler.*
