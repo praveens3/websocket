@@ -20,6 +20,7 @@ struct lws_protocols WebsocketServer::m_Protocols[] = {
 };
 
 WebsocketServer::WebsocketServer() : m_LWSContext(nullptr) {
+	initLog(log_instance);
 }
 
 WebsocketServer::~WebsocketServer() {
