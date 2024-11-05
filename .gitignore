@@ -6,4 +6,5 @@ FBSHandler.*
 src/TestApp/bin/*
 src/TestApp/obj/*
 src/Certificate/*
+src/TestApp/.vs/*
 *.pem
