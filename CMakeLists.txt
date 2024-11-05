@@ -27,11 +27,13 @@ target_include_directories(WebSocketServer PRIVATE ${CMAKE_SOURCE_DIR}/src/Logge
 set_property(TARGET WebSocketServer PROPERTY FOLDER "Applications")
 
 # Test app C# executable websocket client
-set(TestApp_SOURCES src/TestApp/TestApp.cs)
-add_executable(TestApp ${TestApp_SOURCES})
-set_target_properties(TestApp PROPERTIES
-    VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.8"
-    WIN32_EXECUTABLE TRUE
-    VS_GLOBAL_KEYWORD "WindowsApp"
-)
-set_property(TARGET TestApp PROPERTY FOLDER "Applications")
+# file(GLOB_RECURSE TestApp_SOURCES "src/TestApp/*.cs" "src/TestApp/*.resx")
+# set(TestApp_SOURCES ${TestApp_SOURCES})
+# #set(TestApp_SOURCES src/TestApp/TestApp.cs)
+# add_executable(TestApp ${TestApp_SOURCES})
+# set_target_properties(TestApp PROPERTIES
+#     VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.8"
+#     WIN32_EXECUTABLE TRUE
+#     VS_GLOBAL_KEYWORD "WindowsApp"
+# )
+# set_property(TARGET TestApp PROPERTY FOLDER "Applications")

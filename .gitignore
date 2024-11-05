@@ -1,6 +1,9 @@
 build/**
 CmakeUserPresets.json
-*.pem
 .git*
 *.code-workspace
 FBSHandler.*
+src/TestApp/bin/*
+src/TestApp/obj/*
+src/Certificate/*
+*.pem

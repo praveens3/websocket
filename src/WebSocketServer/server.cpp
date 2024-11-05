@@ -55,8 +55,8 @@ bool WebsocketServer::initDefaultWSServer() {
 		| LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 
 	// Set paths for the SSL certificate and private key
-	context_info.ssl_cert_filepath = "D://Users//PraveenS//source//repos//Github//Protocol//your_cert.pem"; // SSL certificate
-	context_info.ssl_private_key_filepath = "D://Users//PraveenS//source//repos//Github//Protocol//your_private_key.pem"; // SSL private key
+	context_info.ssl_cert_filepath = "D:\\Users\\PraveenS\\source\\repos\\Github\\Protocol\\src\\certificate\\server_cert.pem"; // SSL certificate
+	context_info.ssl_private_key_filepath = "D:\\Users\\PraveenS\\source\\repos\\Github\\Protocol\\src\\certificate\\server_key.pem"; // SSL private key
 	context_info.user = this;
 
 	// Create the WS context
@@ -80,8 +80,8 @@ bool WebsocketServer::initHTTP2WSServer() {
 		| LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 
 	// Set paths for the SSL certificate and private key
-	context_info.ssl_cert_filepath = "D://Users//PraveenS//source//repos//Github//Protocol//your_cert.pem"; // SSL certificate
-	context_info.ssl_private_key_filepath = "D://Users//PraveenS//source//repos//Github//Protocol//your_private_key.pem"; // SSL private key
+	context_info.ssl_cert_filepath = "D:\\Users\\PraveenS\\source\\repos\\Github\\Protocol\\src\\certificate\\server_cert.pem"; // SSL certificate
+	context_info.ssl_private_key_filepath = "D:\\Users\\PraveenS\\source\\repos\\Github\\Protocol\\src\\certificate\\server_key.pem"; // SSL private key
 	context_info.user = this;
 	
 	// Create the WS context
