@@ -27,21 +27,26 @@ namespace TestApp
         {
             try
             {
-                Uri serverUri = new Uri("wss://localhost:8080");
+                Uri serverUri = new Uri("wss://localhost:7002");
                 await webSocketClient.ConnectAsync(serverUri);
                 statusLabel.Text = "Connected to WebSocket server!";
+                UpdateLogViewer("Connected to WebSocket server!");
             }
             catch (Exception ex)
             {
                 statusLabel.Text = $"Error connecting to server: " + ex.Message;
                 connectButton.Text = "Connect";
                 connectButton.BackColor = Color.Aquamarine;
+                UpdateLogViewer($"Error connecting to server: " + ex.Message);
+                UpdateLogViewer($"Error connecting to server: " + ex.InnerException);
+
             }
         }
         private void TestAppUI_FormClosing(object sender, FormClosingEventArgs e)
         {
             webSocketClient.Disconnect();
             statusLabel.Text = "Server disconnected";
+            UpdateLogViewer("Server disconnected");
         }
 
         public void UpdateViewerBox(string message)
@@ -62,6 +67,7 @@ namespace TestApp
         private async void sendButton_Click(object sender, EventArgs e)
         {
             await webSocketClient.SendMessageAsync(editorBox.Text);
+            UpdateLogViewer("Message '" + editorBox.Text + "' sent");
         }
 
         private void checkedListBox1_ItemCheck(object sender, ItemCheckEventArgs e)
@@ -94,7 +100,7 @@ namespace TestApp
             }
         }
 
-        private void fileUploadButton_Click(object sender, EventArgs e)
+        private async void fileUploadButton_Click(object sender, EventArgs e)
         {
             if (textBox1.Text.Length == 0 && !textBox1.Text.Contains("."))
                 return;
@@ -107,23 +113,13 @@ namespace TestApp
                     //progressBar1.Value = percent; // Assuming you have a ProgressBar named progressBar
                 });
 
-                _=httpClient.UploadFileAsync(textBox1.Text, "https://localhost:8080");
-
-                statusLabel.Text = "File upload completed successfully.";
+                await httpClient.UploadFileAsync(textBox1.Text, "https://localhost:7002");
+                UpdateLogViewer("uploding file started: " + textBox1.Text);
             }
             catch (Exception ex)
             {
-                statusLabel.Text = $"Error uploading file to server: {ex.Message}";
+                UpdateLogViewer($"Error uploading file to server: {ex.Message}");
             }
-        }
-
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-        //    if (textBox1.Text.Length == 0)
-        //    {
-        //        textBox1.Text = "double click to select file/type the file path";
-        //        textBox1.ForeColor = Color.LightGray;
-        //    }
         }
 
         private void textBox1_Enter(object sender, EventArgs e)
@@ -156,5 +152,36 @@ namespace TestApp
                 textBox1.ForeColor = Color.Black;
             }
         }
+
+        private void LogButton_Click(object sender, EventArgs e)
+        {
+            if (LogButton.Text == ">")
+            {
+                this.Width += 400;
+                LogButton.Text = "<";
+            }
+            else
+            {
+                this.Width -= 400;
+                LogButton.Text = ">";
+            }
+        }
+
+        // Method to safely update the RichTextBox from a background thread
+        private void UpdateLogViewer(string message)
+        {
+            if (LogViewer.InvokeRequired)
+            {
+                LogViewer.Invoke((MethodInvoker)delegate
+                {
+                    LogViewer.AppendText(message + Environment.NewLine);
+                });
+            }
+            else
+            {
+                LogViewer.AppendText(message + Environment.NewLine);
+            }
+        }
+
     }
 }

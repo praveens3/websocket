@@ -34,7 +34,7 @@ struct Client {
 		//file write
 		std::string filename;
 		std::ofstream outfile;
-		bool file_write_inPorgress = false;
+		bool file_write_inProgress = false;
 		std::string file_boundary;
 		DataMap(struct lws* d) : m_Data(d), m_Seq(0) {}
 	};
@@ -56,7 +56,7 @@ public:
 	}
 
 	void removeall() {
-		m_ClientMap.empty();
+		m_ClientMap.clear();
 	}
 
 	struct lws* getClient(const std::string& clientId) {
@@ -93,9 +93,9 @@ public:
 			else {
 				if (logEnabled)
 					LOG_ERROR("client not found, ID: {}", clientId.c_str());
-				return nullptr;
 			}
 		}
+		return nullptr;
 	}
 
 	const std::unordered_map<std::string, DataMap>& data() const {

@@ -38,6 +38,9 @@
             statusLabel = new Label();
             textBox1 = new TextBox();
             progressBar1 = new ProgressBar();
+            LogButton = new Button();
+            label1 = new Label();
+            LogViewer = new RichTextBox();
             panel1.SuspendLayout();
             SuspendLayout();
             // 
@@ -124,7 +127,6 @@
             textBox1.Size = new Size(522, 23);
             textBox1.TabIndex = 5;
             textBox1.Text = "double click to select file/type the file path";
-            textBox1.TextChanged += textBox1_TextChanged;
             textBox1.DoubleClick += textBox1_DoubleClick;
             textBox1.Enter += textBox1_Enter;
             textBox1.Leave += textBox1_Leave;
@@ -136,11 +138,42 @@
             progressBar1.Size = new Size(411, 23);
             progressBar1.TabIndex = 6;
             // 
+            // LogButton
+            // 
+            LogButton.BackColor = Color.Khaki;
+            LogButton.Location = new Point(794, 251);
+            LogButton.Name = "LogButton";
+            LogButton.Size = new Size(13, 31);
+            LogButton.TabIndex = 7;
+            LogButton.Text = ">";
+            LogButton.UseVisualStyleBackColor = false;
+            LogButton.Click += LogButton_Click;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(810, 17);
+            label1.Name = "label1";
+            label1.Size = new Size(56, 15);
+            label1.TabIndex = 9;
+            label1.Text = "Log trace";
+            // 
+            // LogViewer
+            // 
+            LogViewer.Location = new Point(813, 33);
+            LogViewer.Name = "LogViewer";
+            LogViewer.Size = new Size(384, 249);
+            LogViewer.TabIndex = 10;
+            LogViewer.Text = "";
+            // 
             // TestAppForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(809, 450);
+            Controls.Add(LogViewer);
+            Controls.Add(label1);
+            Controls.Add(LogButton);
             Controls.Add(progressBar1);
             Controls.Add(fileUploadButton);
             Controls.Add(textBox1);
@@ -168,5 +201,8 @@
         private Button fileUploadButton;
         private TextBox textBox1;
         private ProgressBar progressBar1;
+        private Button LogButton;
+        private Label label1;
+        private RichTextBox LogViewer;
     }
 }
