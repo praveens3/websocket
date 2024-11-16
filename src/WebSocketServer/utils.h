@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #include "Log.h"
+#include <fstream>
 
 struct ThreadHandler {
 	std::atomic<bool> m_KeepAlive;
@@ -26,10 +27,15 @@ struct ThreadHandler {
 };
 
 struct Client {
-private:
 	struct DataMap {
 		struct lws* m_Data;
 		uint64_t m_Seq;
+		
+		//file write
+		std::string filename;
+		std::ofstream outfile;
+		bool file_write_inPorgress = false;
+		std::string file_boundary;
 		DataMap(struct lws* d) : m_Data(d), m_Seq(0) {}
 	};
 	std::unordered_map<std::string, DataMap> m_ClientMap;

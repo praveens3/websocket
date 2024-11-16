@@ -7,17 +7,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace TestApp
 {
     public partial class TestAppForm : Form
     {
         private WebSocketClient webSocketClient;
+        private CHttpClient httpClient;
         private bool viewHeartBeat = false;
         public TestAppForm()
         {
             InitializeComponent();
             webSocketClient = new WebSocketClient(UpdateViewerBox);
+            httpClient = new CHttpClient();
         }
 
         private async void connectServer()
@@ -88,6 +91,69 @@ namespace TestApp
                 webSocketClient.Disconnect();
                 connectButton.Text = "Connect";
                 connectButton.BackColor = Color.Aquamarine;
+            }
+        }
+
+        private void fileUploadButton_Click(object sender, EventArgs e)
+        {
+            if (textBox1.Text.Length == 0 && !textBox1.Text.Contains("."))
+                return;
+
+            try
+            {
+                var progress = new Progress<int>(percent =>
+                {
+                    statusLabel.Text = $"Upload progress: {percent}%";
+                    //progressBar1.Value = percent; // Assuming you have a ProgressBar named progressBar
+                });
+
+                _=httpClient.UploadFileAsync(textBox1.Text, "https://localhost:8080");
+
+                statusLabel.Text = "File upload completed successfully.";
+            }
+            catch (Exception ex)
+            {
+                statusLabel.Text = $"Error uploading file to server: {ex.Message}";
+            }
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+        //    if (textBox1.Text.Length == 0)
+        //    {
+        //        textBox1.Text = "double click to select file/type the file path";
+        //        textBox1.ForeColor = Color.LightGray;
+        //    }
+        }
+
+        private void textBox1_Enter(object sender, EventArgs e)
+        {
+            // Clear placeholder text when the TextBox gains focus
+            if (textBox1.Text == "double click to select file/type the file path")
+            {
+                textBox1.Text = "";
+                textBox1.ForeColor = Color.Black;
+            }
+        }
+
+        private void textBox1_Leave(object sender, EventArgs e)
+        {
+            // Restore placeholder text if the TextBox is empty when it loses focus
+            if (string.IsNullOrWhiteSpace(textBox1.Text))
+            {
+                textBox1.Text = "double click to select file/type the file path";
+                textBox1.ForeColor = Color.LightGray;
+            }
+        }
+        private void textBox1_DoubleClick(object sender, EventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.Filter = "All Files (*.*)|*.*";
+            dialog.Title = "Select a File to upload";
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                textBox1.Text = dialog.FileName;
+                textBox1.ForeColor = Color.Black;
             }
         }
     }

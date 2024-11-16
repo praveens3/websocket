@@ -11,11 +11,17 @@ const uint16_t SEND_PERIODIC_MSG_INTERVAL_MS = 5000;
 
 struct lws_protocols WebsocketServer::m_Protocols[] = {
 	{
-		"ws_protocol",								// Protocol name
+		"ws",								// Protocol name
 		WebsocketServer::callback_wss,              // Callback function for this protocol
 		sizeof(WebsocketServer*),                   // User data per connection
 		1024,										// Max frame size
 	},
+	//{
+	//	"http",                                     // Protocol name for HTTP
+	//	WebsocketServer::callback_http,             // Callback function for HTTP protocol
+	//	0,                                          // No user data needed for HTTP
+	//	0,                                          // Max frame size not applicable to HTTP
+	//},
 	{ NULL, NULL, 0, 0 }							// Terminator
 };
 
@@ -164,8 +170,8 @@ std::string getClientinfo(struct lws* wsi) {
 	if (lws_get_peer_simple(wsi, clientIp, sizeof(clientIp))) {
 		std::ostringstream oss;
 		oss << std::hex << wsi;
-		clientInfo = clientIp + std::string("-") + oss.str();
-		LOG_INFO("Assigning lws id to wss server name: ", clientInfo);
+		clientInfo = clientIp + std::string("-") + oss.str() + "-" + std::to_string(lws_get_socket_fd(wsi));
+		LOG_DEBUG("Assigning lws id to wss server name: ", clientInfo);
 	}
 	return clientInfo;
 }
@@ -205,10 +211,153 @@ int WebsocketServer::callback_wss(struct lws* wsi, enum lws_callback_reasons rea
 			break;
 
 		default:
+			callback_http(wsi, reason, user, in, len);
 			break;
 	}
 	return 0;
 }
+
+#include <fstream>
+//#include <iostream>
+#include <regex>
+
+std::string extract_boundary_from_header(const std::string& buffer) {
+	std::regex boundary_regex(R"(--([^\r\n]+))");
+	std::smatch match;
+
+	if (std::regex_search(buffer, match, boundary_regex)) {
+		return match[1].str();
+	}
+	return "";
+}
+
+bool check_end_boundary(const std::string& buffer, const std::string& file_boundary) {
+	if (buffer.rfind(file_boundary) != buffer.npos) {
+		std::string end_boundary = file_boundary + "--";
+
+		auto pos = buffer.rfind(end_boundary);
+		if (buffer.rfind(end_boundary) != buffer.npos) {
+			LOG_INFO("End boundary matched: {}", end_boundary.c_str());
+			return true;
+		}
+		else {
+			LOG_WARN("End boundary not found.");
+			return false;
+		}
+	}
+	return false;
+}
+
+std::array<std::string, 2> extract_filename(const std::string& buffer) {
+	std::string filename;
+	std::smatch match;
+
+	std::string file_boundary = extract_boundary_from_header(buffer);
+	if (file_boundary.size() == 0)
+	{
+		LOG_ERROR("start boundry is not found");
+		return { filename, "" };
+	}
+
+	std::regex content_disposition_regex(R"(Content-Disposition: form-data; name="file"; filename="([^"]+))");
+	if (std::regex_search(buffer, match, content_disposition_regex)) {
+		filename = match[1];
+		LOG_INFO("Extracted filename: {}", filename.c_str());
+	}
+	else {
+		LOG_WARN("Filename not found in the request, or the 'name' is not 'file'.");
+	}
+
+	return { filename, file_boundary };
+}
+
+
+Client::DataMap* WebsocketServer::getClientDataMap(struct lws* wsi) {
+	const std::string clientInfo = getClientinfo(wsi);
+	WebsocketServer* server = getServer(wsi);
+	if (server)
+	{
+		auto data = server->m_Clients.getData(clientInfo, false);
+		return data;
+	}
+	return nullptr;
+}
+
+int WebsocketServer::callback_http(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
+	static std::ofstream outfile;  // For writing (upload)
+
+	switch (reason) {
+	case LWS_CALLBACK_HTTP:
+		if (lws_hdr_total_length(wsi, WSI_TOKEN_POST_URI)) {
+			int fd = lws_get_socket_fd(wsi);
+			const std::string clientInfo = getClientinfo(wsi);
+			LOG_INFO("Http post request received, Client Id: {}", clientInfo.c_str());
+			WebsocketServer* server = getServer(wsi);
+			if(server)
+				server->m_Clients.addClient(clientInfo, wsi);
+		}
+		break;
+
+	case LWS_CALLBACK_HTTP_BODY: {
+		
+		auto dataMap = getClientDataMap(wsi);
+		if (dataMap)
+		{
+			std::ofstream& outfile = dataMap->outfile;
+				if (dataMap->file_write_inPorgress && outfile.is_open()) {
+					if (check_end_boundary((const char*)in, dataMap->file_boundary))
+						return 0;
+					outfile.write((const char*)in, len);
+				}
+				else if (!dataMap->file_write_inPorgress) {
+					auto data = extract_filename((const char*)in);
+					dataMap->filename = data[0];
+					dataMap->file_boundary = data[1];
+					if (!dataMap->filename.empty()) {
+						dataMap->file_write_inPorgress = true;
+						const std::string filepath = "File\\Download\\" + dataMap->filename;
+						outfile.open(filepath, std::ios::binary);
+						if (!outfile.is_open()) {
+							LOG_ERROR("Failed to open file for writing: {}", filepath.c_str());
+							return -1;
+						}
+						const std::string clientInfo = getClientinfo(wsi);
+						LOG_INFO("downloding file: {}, {}", filepath.c_str(), clientInfo.c_str());
+					}
+					else {
+						LOG_ERROR("Filename not extracted, or request does not contain 'file' field.");
+						return -1;
+					}
+				}
+		}
+		break;
+	}
+
+	case LWS_CALLBACK_HTTP_BODY_COMPLETION: {
+		auto dataMap = getClientDataMap(wsi);
+		if (dataMap)
+		{
+			dataMap->outfile.close();
+			dataMap->file_write_inPorgress = false;
+			const std::string clientInfo = getClientinfo(wsi);
+			LOG_INFO("File download completed. {}, {} ", dataMap->filename.c_str(), clientInfo.c_str());
+			WebsocketServer* server = getServer(wsi);
+			if (server)
+				server->m_Clients.removeClient(clientInfo);
+		}
+		lws_return_http_status(wsi, HTTP_STATUS_OK, nullptr);
+		lws_http_transaction_completed(wsi);
+	}
+	break;
+
+	default:
+		break;
+	}
+	
+	return 0;
+}
+
+
 
 bool WebsocketServer::sendMsg(struct lws* wsi, const std::string& data, bool logEnabled) {
 	std::vector<unsigned char> buf(LWS_PRE + data.size());

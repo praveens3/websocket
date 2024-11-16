@@ -30,7 +30,9 @@ namespace websocket {
 		void run();
 		bool sendMsg(struct lws* wsi, const std::string& data, bool logEnabled = true);
 
+		static Client::DataMap* getClientDataMap(struct lws* wsi);
 		static int callback_wss(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len);
+		static int callback_http(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len);
 	};
 
 } // namespace websocket
