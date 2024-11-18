@@ -142,9 +142,12 @@ void WebsocketServer::send_heartBeat() {
 	if (m_Clients.data().size() && (GetTickCount64() - m_LastHBtime > SEND_PERIODIC_MSG_INTERVAL_MS))
 	{
 		for (const auto& d : m_Clients.data()) {
-			m_Clients.incSeq(d.first);
-			sendMsg(d.second.m_Data, "Heartbeat: " + std::to_string((d.second.m_Seq)), false);
-			m_LastHBtime = GetTickCount64();
+			if (d.second.m_Type)
+			{
+				m_Clients.incSeq(d.first);
+				sendMsg(d.second.m_Data, "Heartbeat: " + std::to_string((d.second.m_Seq)), false);
+				m_LastHBtime = GetTickCount64();
+			}
 		}
 	}
 }
@@ -232,7 +235,7 @@ int WebsocketServer::callback_http(struct lws* wsi, enum lws_callback_reasons re
 			const std::string clientInfo = getClientinfo(wsi);
 			WebsocketServer* server = getServer(wsi);
 			if (server) {
-				server->m_Clients.addClient(clientInfo, wsi);
+				server->m_Clients.addClient(clientInfo, wsi, 0);
 				LOG_INFO("Http file received, Client Id: {}, count: {}", clientInfo.c_str(), server->m_Clients.data().size());
 			}
 		}

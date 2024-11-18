@@ -20,7 +20,7 @@ namespace TestApp
         {
             InitializeComponent();
             webSocketClient = new WebSocketClient(UpdateViewerBox);
-            httpClient = new CHttpClient();
+            httpClient = new CHttpClient(UpdateLogViewer);
         }
 
         private async void connectServer()
@@ -113,9 +113,8 @@ namespace TestApp
                     statusLabel.Text = $"Upload progress: {percent}%";
                     //progressBar1.Value = percent; // Assuming you have a ProgressBar named progressBar
                 });
-
+                UpdateLogViewer("start uploading file: " + textBox1.Text);
                 await httpClient.UploadFileAsync(textBox1.Text, "https://localhost:7002");
-                UpdateLogViewer("uploding file started: " + textBox1.Text);
             }
             catch (Exception ex)
             {

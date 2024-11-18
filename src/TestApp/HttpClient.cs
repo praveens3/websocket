@@ -11,6 +11,13 @@ namespace TestApp
 {
     internal class CHttpClient
     {
+        private Action<string> logViewerAction;
+
+        internal CHttpClient(Action<string> updateLogViewer)
+        {
+            logViewerAction = updateLogViewer;
+        }
+        
         private string ComputeSha256Hash(string filePath)
         {
             System.Security.Cryptography.SHA256 sha256 = System.Security.Cryptography.SHA256.Create();
@@ -48,16 +55,16 @@ namespace TestApp
 
                     if (response.IsSuccessStatusCode)
                     {
-                        Console.WriteLine($"File uploaded successfully: {filePath}");
+                        logViewerAction?.Invoke($"File uploaded successfully: {filePath}, size: {fileStream.Length}, reponse code: {response.IsSuccessStatusCode}");
                     }
                     else
                     {
-                        Console.WriteLine($"Failed to upload file: {response.ReasonPhrase}");
+                        logViewerAction?.Invoke($"Failed to upload file: {response.ReasonPhrase}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error uploading file: {ex.Message}");
+                    logViewerAction?.Invoke($"Error uploading file: {ex.Message}");
                 }
             }
         }

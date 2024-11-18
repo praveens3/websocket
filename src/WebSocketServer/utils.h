@@ -32,7 +32,8 @@ struct Client {
 	struct DataMap {
 		struct lws* m_Data;
 		uint64_t m_Seq;
-		
+		uint8_t m_Type; //wss 0, http 1
+
 		//file write
 		std::string filename;
 		std::string fileChecksum;
@@ -47,7 +48,7 @@ struct Client {
 
 public:
 
-	void addClient(const std::string& clientId, struct lws* wsi) {
+	void addClient(const std::string& clientId, struct lws* wsi, uint8_t type = 1) {
 		if (!m_ClientMap.count(clientId)) {
 			m_ClientMap.emplace(clientId, DataMap(wsi));
 			LOG_INFO("added new client: {}, count: {}", clientId.c_str(), m_ClientMap.size());
