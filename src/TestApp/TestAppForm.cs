@@ -62,6 +62,7 @@ namespace TestApp
             {
                 viewerBox.AppendText($"{message}\n"); // Append message to RichTextBox
             }
+            viewerBox.ScrollToCaret();
         }
 
         private async void sendButton_Click(object sender, EventArgs e)
@@ -181,6 +182,7 @@ namespace TestApp
             {
                 LogViewer.AppendText(message + Environment.NewLine);
             }
+            LogViewer.ScrollToCaret();
         }
 
     }

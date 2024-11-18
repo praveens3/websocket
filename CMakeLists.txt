@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${CMAKE_BINARY_DIR}/generators/")
 find_package(spdlog REQUIRED)
 find_package(libwebsockets REQUIRED)
+#find_package(OpenSSL REQUIRED)
 message(STATUS "libwebsockets_LIBRARIES: ${websockets_LIBRARIES}")
 message(STATUS "libwebsockets_INCLUDE_DIRS: ${websockets_INCLUDE_DIRS}")
 
@@ -24,6 +25,7 @@ file(GLOB WebSocketServer_SOURCES src/WebSocketServer/*.cpp src/WebSocketServer/
 add_executable(WebSocketServer ${WebSocketServer_SOURCES})
 target_link_libraries(WebSocketServer PRIVATE websockets Logger)
 target_include_directories(WebSocketServer PRIVATE ${CMAKE_SOURCE_DIR}/src/Logger)
+target_link_libraries(WebSocketServer  PRIVATE openssl::openssl)
 set_property(TARGET WebSocketServer PROPERTY FOLDER "Applications")
 
 # Test app C# executable websocket client

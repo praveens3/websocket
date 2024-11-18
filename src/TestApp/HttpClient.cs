@@ -11,6 +11,16 @@ namespace TestApp
 {
     internal class CHttpClient
     {
+        private string ComputeSha256Hash(string filePath)
+        {
+            System.Security.Cryptography.SHA256 sha256 = System.Security.Cryptography.SHA256.Create();
+            using (FileStream fileStream = File.OpenRead(filePath))
+            {
+                byte[] hash = sha256.ComputeHash(fileStream);
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
+        }
+
         public async Task UploadFileAsync(string filePath, string url)
         {
             using (var client = new HttpClient())
@@ -31,6 +41,7 @@ namespace TestApp
                         FileName = $"\"{Path.GetFileName(filePath)}\""
                     };
                     fileContent.Add(byteArrayContent);
+                    byteArrayContent.Headers.Add("File-Checksum", ComputeSha256Hash(filePath));
 
                     // Send POST request to upload the file
                     var response = await client.PostAsync(url, fileContent);

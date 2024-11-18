@@ -2,12 +2,13 @@
 #define WEBSOCKET_SERVER_H
 
 #include <libwebsockets.h>
+#include "HttpHandler.h"
+
 #include <string>
-#include "utils.h"
 
 namespace websocket {
 
-	class WebsocketServer {
+	class WebsocketServer : private CHttpHandler {
 	public:
 		WebsocketServer();
 		~WebsocketServer();
@@ -30,6 +31,9 @@ namespace websocket {
 		void run();
 		bool sendMsg(struct lws* wsi, const std::string& data, bool logEnabled = true);
 
+		//utils
+		static WebsocketServer* getServer(struct lws* wsi);
+		static std::string getClientinfo(struct lws* wsi);
 		static Client::DataMap* getClientDataMap(struct lws* wsi);
 		static int callback_wss(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len);
 		static int callback_http(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len);

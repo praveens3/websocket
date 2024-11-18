@@ -1,7 +1,5 @@
 #include "server.h"
 #include <cstring>
-#include <sstream>
-#include <regex>
 
 using namespace websocket;
 
@@ -151,224 +149,6 @@ void WebsocketServer::send_heartBeat() {
 	}
 }
 
-WebsocketServer* getServer(struct lws* wsi) {
-	WebsocketServer* server = nullptr;
-	auto context = lws_get_context(wsi);
-	if (context) {
-		auto userdata = lws_context_user(context);
-		if (userdata) {
-			server = reinterpret_cast<WebsocketServer*>(userdata);
-		}
-	}
-	return server;
-}
-
-std::string getClientinfo(struct lws* wsi) {
-	std::string clientInfo;
-	char clientIp[128];
-	if (lws_get_peer_simple(wsi, clientIp, sizeof(clientIp))) {
-		std::ostringstream oss;
-		oss << std::hex << wsi;
-		clientInfo = clientIp + std::string("-") + oss.str() + "-" + std::to_string(lws_get_socket_fd(wsi));
-		LOG_DEBUG("Assigning lws id to wss server name: ", clientInfo);
-	}
-	return clientInfo;
-}
-
-int WebsocketServer::callback_wss(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
-	switch (reason) {
-		case LWS_CALLBACK_ESTABLISHED: {
-			LOG_INFO("Connection established");
-			WebsocketServer* server = getServer(wsi);
-			if (server) {
-				const std::string clientInfo = getClientinfo(wsi);
-				LOG_INFO("Adding new client [{}] to server", clientInfo);
-				server->m_Clients.addClient(clientInfo, wsi);
-			}
-			break;
-		}
-
-		case LWS_CALLBACK_RECEIVE: {
-			std::string received_message((char*)in, len);  // Convert the received message to a string
-			LOG_INFO("Received message: " + received_message);
-			WebsocketServer* server = getServer(wsi);
-			if (server) {
-				server->sendMsg(wsi, "Resp: " + received_message);
-			}
-			break;
-		}
-
-		case LWS_CALLBACK_CLOSED: {
-			LOG_INFO("Connection closed");
-			WebsocketServer* server = getServer(wsi);
-			if (server) {
-				const std::string clientInfo = getClientinfo(wsi);
-				LOG_INFO("removing new client [{}] to server", clientInfo);
-				server->m_Clients.removeClient(clientInfo);
-			}
-		}
-			break;
-
-		default:
-			callback_http(wsi, reason, user, in, len);
-			break;
-	}
-	return 0;
-}
-
-std::string extract_boundary_from_header(const std::string& buffer) {
-	std::regex boundary_regex(R"(--([^\r\n]+))");
-	std::smatch match;
-
-	if (std::regex_search(buffer, match, boundary_regex)) {
-		return match[1].str();
-	}
-	return "";
-}
-
-int check_end_boundary(const std::string& buffer, const std::string& file_boundary) {
-	if (buffer.rfind(file_boundary) != buffer.npos) {
-		std::string end_boundary = "--" + file_boundary + "--";
-
-		auto endPos = buffer.rfind(end_boundary);
-		if (endPos != buffer.npos) {
-			LOG_INFO("End boundary matched: {}", end_boundary.c_str());
-			return endPos;
-		}
-		else {
-			LOG_WARN("End boundary not found.");
-		}
-	}
-	return -1;
-}
-
-std::array<std::string, 3> extract_filename(const std::string& buffer) {
-	std::string filename;
-	std::smatch match;
-	std::string content;
-
-	std::string file_boundary = extract_boundary_from_header(buffer);
-	if (file_boundary.size() == 0)
-	{
-		LOG_ERROR("start boundry is not found");
-		return { filename, "" };
-	}
-
-	std::regex content_disposition_regex(R"(Content-Disposition: form-data; name="file"; filename="([^"]+))");
-	if (std::regex_search(buffer, match, content_disposition_regex)) {
-		filename = match[1];
-		auto startPos = buffer.find(filename);
-		auto p2 = filename.length()+1;
-		auto p3 = std::string("\r\n\r\n").length();
-		p3 = startPos + p2 + p3;
-		if (startPos != buffer.npos) {
-			content = buffer.substr(p3);
-		}
-		LOG_INFO("Extracted filename: {}", filename.c_str());
-	}
-	else {
-		LOG_WARN("Filename not found in the request, or the 'name' is not 'file'.");
-	}
-
-	return { filename, file_boundary, content };
-}
-
-
-Client::DataMap* WebsocketServer::getClientDataMap(struct lws* wsi) {
-	const std::string clientInfo = getClientinfo(wsi);
-	WebsocketServer* server = getServer(wsi);
-	if (server)
-	{
-		auto data = server->m_Clients.getData(clientInfo, false);
-		return data;
-	}
-	return nullptr;
-}
-
-int WebsocketServer::callback_http(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
-	static std::ofstream outfile;  // For writing (upload)
-	std::string buffer((const char*)in, len);
-	switch (reason) {
-	case LWS_CALLBACK_HTTP:
-		if (lws_hdr_total_length(wsi, WSI_TOKEN_POST_URI)) {
-			//auto fd = lws_get_socket_fd(wsi);
-			const std::string clientInfo = getClientinfo(wsi);
-			LOG_INFO("Http post request received, Client Id: {}", clientInfo.c_str());
-			WebsocketServer* server = getServer(wsi);
-			if(server)
-				server->m_Clients.addClient(clientInfo, wsi);
-		}
-		break;
-
-	case LWS_CALLBACK_HTTP_BODY: {
-		
-		auto dataMap = getClientDataMap(wsi);
-		if (dataMap)
-		{
-			std::ofstream& outfile = dataMap->outfile;
-		check_end_bound:
-			if (dataMap->file_write_inProgress && outfile.is_open()) {
-				auto endPos = check_end_boundary(buffer, dataMap->file_boundary);
-				if (endPos >= 0) {
-					
-					buffer = buffer.substr(0, endPos - 2);
-					outfile.write(buffer.c_str(), buffer.length());
-					return 0;
-				}
-				outfile.write(buffer.c_str(), buffer.length());
-			}
-			else if (!dataMap->file_write_inProgress) {
-				auto data = extract_filename((const char*)in);
-				dataMap->filename = data[0];
-				dataMap->file_boundary = data[1];
-				if (!dataMap->filename.empty()) {
-					dataMap->file_write_inProgress = true;
-					const std::string filepath = "File\\Download\\" + dataMap->filename;
-					outfile.open(filepath, std::ios::binary);
-					if (!outfile.is_open()) {
-						LOG_ERROR("Failed to open file for writing: {}", filepath.c_str());
-						return -1;
-					}
-					const std::string clientInfo = getClientinfo(wsi);
-					LOG_INFO("downloding file: {}, {}", filepath.c_str(), clientInfo.c_str());
-					buffer = data[2];
-					goto check_end_bound;
-				}
-				else {
-					LOG_ERROR("Filename not extracted, or request does not contain 'file' field.");
-					return -1;
-				}
-			}
-		}
-		break;
-	}
-
-	case LWS_CALLBACK_HTTP_BODY_COMPLETION: {
-		auto dataMap = getClientDataMap(wsi);
-		if (dataMap)
-		{
-			dataMap->outfile.close();
-			dataMap->file_write_inProgress = false;
-			const std::string clientInfo = getClientinfo(wsi);
-			LOG_INFO("File download completed. {}, {} ", dataMap->filename.c_str(), clientInfo.c_str());
-			WebsocketServer* server = getServer(wsi);
-			if (server)
-				server->m_Clients.removeClient(clientInfo);
-		}
-		lws_return_http_status(wsi, HTTP_STATUS_OK, nullptr);
-		lws_http_transaction_completed(wsi);
-	}
-	break;
-
-	default:
-		break;
-	}
-	
-	return 0;
-}
-
-
-
 bool WebsocketServer::sendMsg(struct lws* wsi, const std::string& data, bool logEnabled) {
 	std::vector<unsigned char> buf(LWS_PRE + data.size());
 	std::memcpy(&buf[LWS_PRE], data.c_str(), data.size());
@@ -386,3 +166,146 @@ bool WebsocketServer::sendMsg(struct lws* wsi, const std::string& data, bool log
 	return true;
 }
 
+int WebsocketServer::callback_wss(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
+	switch (reason) {
+		case LWS_CALLBACK_ESTABLISHED: {
+			LOG_INFO("WS connection established");
+			WebsocketServer* server = getServer(wsi);
+			if (server) {
+				const std::string clientInfo = getClientinfo(wsi);
+				server->m_Clients.addClient(clientInfo, wsi);
+				LOG_INFO("Added new WS client [{}] to server, count: {}", clientInfo, server->m_Clients.data().size());
+			}
+			break;
+		}
+
+		case LWS_CALLBACK_RECEIVE: {
+			std::string received_message((char*)in, len);  // Convert the received message to a string
+			LOG_INFO("WS received message: " + received_message);
+			WebsocketServer* server = getServer(wsi);
+			if (server) {
+				server->sendMsg(wsi, "Resp: " + received_message);
+			}
+			break;
+		}
+
+		case LWS_CALLBACK_CLOSED: {
+			LOG_INFO("WS connection closed");
+			WebsocketServer* server = getServer(wsi);
+			if (server) {
+				const std::string clientInfo = getClientinfo(wsi);
+				server->m_Clients.removeClient(clientInfo);
+				LOG_INFO("Removed WS client [{}] from  server, count: {}", clientInfo, server->m_Clients.data().size());
+			}
+		}
+			break;
+
+		default:
+			callback_http(wsi, reason, user, in, len);
+			break;
+	}
+	return 0;
+}
+
+std::string extract_hash(const char* in, size_t len) {
+	std::string body(in, len);
+
+	// Find the "hash" field in the multipart data
+	size_t hash_start = body.find("\"hash\"");
+	if (hash_start != std::string::npos) {
+		size_t hash_value_start = body.find("\"", hash_start + 7);
+		size_t hash_value_end = body.find("\"", hash_value_start + 1);
+
+		if (hash_value_start != std::string::npos && hash_value_end != std::string::npos) {
+			// Extract the hash value from the multipart data
+			return body.substr(hash_value_start + 1, hash_value_end - hash_value_start - 1);
+		}
+	}
+	return "";
+}
+
+int WebsocketServer::callback_http(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
+	switch (reason) {
+	case LWS_CALLBACK_HTTP:
+		LOG_INFO("Http message received");
+		if (lws_hdr_total_length(wsi, WSI_TOKEN_POST_URI)) {
+			const std::string clientInfo = getClientinfo(wsi);
+			WebsocketServer* server = getServer(wsi);
+			if (server) {
+				server->m_Clients.addClient(clientInfo, wsi);
+				LOG_INFO("Http file received, Client Id: {}, count: {}", clientInfo.c_str(), server->m_Clients.data().size());
+			}
+		}
+		break;
+
+	case LWS_CALLBACK_HTTP_BODY: {
+		std::string buffer((const char*)in, len);
+		handleFileWrite(buffer, getClientDataMap(wsi));
+		break;
+	}
+
+	case LWS_CALLBACK_HTTP_BODY_COMPLETION: {
+		const std::string clientInfo = getClientinfo(wsi);
+		auto dataMap = getClientDataMap(wsi);
+		if (dataMap)
+		{
+			dataMap->outfile.close();
+			dataMap->file_write_inProgress = false;
+			if(validateFileChecksum(dataMap))
+				LOG_INFO("Http File download completed. filename: {}, size: {}, client: {} ", dataMap->filename.c_str(), dataMap->filesize, clientInfo.c_str());
+			else
+				LOG_WARN("Http File download completed, but checksum not matched, filename: {}, size: {}, client: {} ", dataMap->filename.c_str(), dataMap->filesize, clientInfo.c_str());
+		}
+		lws_return_http_status(wsi, HTTP_STATUS_OK, nullptr);
+		lws_http_transaction_completed(wsi);
+
+		LOG_INFO("Http client connection closed");
+		WebsocketServer* server = getServer(wsi);
+		if (server) {
+			server->m_Clients.removeClient(clientInfo);
+			LOG_INFO("Removed http client [{}] from server, count: {}", clientInfo, server->m_Clients.data().size());
+		}
+	}
+	break;
+
+	default:
+		break;
+	}
+	
+	return 0;
+}
+
+WebsocketServer* WebsocketServer::getServer(struct lws* wsi) {
+	WebsocketServer* server = nullptr;
+	auto context = lws_get_context(wsi);
+	if (context) {
+		auto userdata = lws_context_user(context);
+		if (userdata) {
+			server = reinterpret_cast<WebsocketServer*>(userdata);
+		}
+	}
+	return server;
+}
+
+Client::DataMap* WebsocketServer::getClientDataMap(struct lws* wsi) {
+	const std::string clientInfo = getClientinfo(wsi);
+	WebsocketServer* server = getServer(wsi);
+	if (server)
+	{
+		auto data = server->m_Clients.getData(clientInfo, false);
+		return data;
+	}
+	return nullptr;
+}
+
+std::string WebsocketServer::getClientinfo(struct lws* wsi) {
+	std::string clientInfo;
+	char clientIp[128];
+	if (lws_get_peer_simple(wsi, clientIp, sizeof(clientIp))) {
+		std::ostringstream oss;
+		oss << std::hex << wsi;
+		clientInfo = clientIp + std::string("-") + oss.str() + "-" + std::to_string(lws_get_socket_fd(wsi));
+		LOG_DEBUG("Assigning lws id to wss server name: ", clientInfo);
+	}
+	return clientInfo;
+}

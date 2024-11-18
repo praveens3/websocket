@@ -3,6 +3,8 @@
 
 #include "Log.h"
 #include <fstream>
+#include <sstream>
+#include <openssl/sha.h>
 
 struct ThreadHandler {
 	std::atomic<bool> m_KeepAlive;
@@ -33,6 +35,9 @@ struct Client {
 		
 		//file write
 		std::string filename;
+		std::string fileChecksum;
+		uint64_t filesize;
+		SHA256_CTX sha256_ctx;
 		std::ofstream outfile;
 		bool file_write_inProgress = false;
 		std::string file_boundary;
@@ -67,13 +72,13 @@ public:
 		return nullptr;
 	}
 
-	uint64_t getSeq(const std::string& clientId) {
-		auto dataMap = getData(clientId, false);
-		if (dataMap) {
-			return dataMap->m_Seq;
-		}
-		return 0;
-	}
+	//uint64_t getSeq(const std::string& clientId) {
+	//	auto dataMap = getData(clientId, false);
+	//	if (dataMap) {
+	//		return dataMap->m_Seq;
+	//	}
+	//	return 0;
+	//}
 
 	void incSeq(const std::string& clientId) {
 		auto dataMap = getData(clientId, false);
@@ -101,8 +106,5 @@ public:
 	const std::unordered_map<std::string, DataMap>& data() const {
 		return m_ClientMap;
 	}
-
-
 };
-
 #endif // UTILS_H
