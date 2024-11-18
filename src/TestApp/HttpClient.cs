@@ -55,11 +55,14 @@ namespace TestApp
 
                     if (response.IsSuccessStatusCode)
                     {
-                        logViewerAction?.Invoke($"File uploaded successfully: {filePath}, size: {fileStream.Length}, reponse code: {response.IsSuccessStatusCode}");
+                        if(response.StatusCode == HttpStatusCode.OK)
+                            logViewerAction?.Invoke($"File uploaded successfully: {filePath}, size: {fileStream.Length}, reponse code: {response.StatusCode}");
+                        else
+                            logViewerAction?.Invoke($"File uploaded failed: {filePath}, size: {fileStream.Length}, reponse code: {response.StatusCode}, {response.ReasonPhrase}");
                     }
                     else
                     {
-                        logViewerAction?.Invoke($"Failed to upload file: {response.ReasonPhrase}");
+                        logViewerAction?.Invoke($"Failed to upload file: {response.StatusCode}, {response.ReasonPhrase}");
                     }
                 }
                 catch (Exception ex)

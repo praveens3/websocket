@@ -254,12 +254,17 @@ int WebsocketServer::callback_http(struct lws* wsi, enum lws_callback_reasons re
 		{
 			dataMap->outfile.close();
 			dataMap->file_write_inProgress = false;
-			if(validateFileChecksum(dataMap))
+			if (validateFileChecksum(dataMap)) {
 				LOG_INFO("Http File download completed. filename: {}, size: {}, client: {} ", dataMap->filename.c_str(), dataMap->filesize, clientInfo.c_str());
-			else
+				lws_return_http_status(wsi, HTTP_STATUS_OK, nullptr);
+			}
+			else {
 				LOG_WARN("Http File download completed, but checksum not matched, filename: {}, size: {}, client: {} ", dataMap->filename.c_str(), dataMap->filesize, clientInfo.c_str());
+				lws_return_http_status(wsi, HTTP_STATUS_PARTIAL_CONTENT, nullptr);
+			}
+		} else {
+			lws_return_http_status(wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, nullptr);
 		}
-		lws_return_http_status(wsi, HTTP_STATUS_OK, nullptr);
 		lws_http_transaction_completed(wsi);
 
 		LOG_INFO("Http client connection closed");
