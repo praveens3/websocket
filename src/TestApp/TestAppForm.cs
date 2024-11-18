@@ -19,7 +19,7 @@ namespace TestApp
         public TestAppForm()
         {
             InitializeComponent();
-            webSocketClient = new WebSocketClient(UpdateViewerBox);
+            webSocketClient = new WebSocketClient(UpdateViewerBox, UpdateLogViewer);
             httpClient = new CHttpClient(UpdateLogViewer);
         }
 
@@ -68,7 +68,7 @@ namespace TestApp
         private async void sendButton_Click(object sender, EventArgs e)
         {
             await webSocketClient.SendMessageAsync(editorBox.Text);
-            UpdateLogViewer("Message '" + editorBox.Text + "' sent");
+            UpdateLogViewer("Message sent: " + editorBox.Text);
         }
 
         private void checkedListBox1_ItemCheck(object sender, ItemCheckEventArgs e)
@@ -162,7 +162,7 @@ namespace TestApp
             }
             else
             {
-                this.Width -= 400;
+                this.Width = 824;
                 LogButton.Text = ">";
             }
         }

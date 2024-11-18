@@ -160,11 +160,13 @@
             // 
             // LogViewer
             // 
+            LogViewer.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             LogViewer.BackColor = Color.FromArgb(64, 64, 64);
             LogViewer.ForeColor = Color.WhiteSmoke;
             LogViewer.Location = new Point(813, 33);
             LogViewer.Name = "LogViewer";
-            LogViewer.Size = new Size(384, 249);
+            LogViewer.ReadOnly = true;
+            LogViewer.Size = new Size(0, 236);
             LogViewer.TabIndex = 10;
             LogViewer.Text = "";
             // 
@@ -172,7 +174,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(810, 450);
+            ClientSize = new Size(814, 450);
             Controls.Add(LogViewer);
             Controls.Add(label1);
             Controls.Add(LogButton);

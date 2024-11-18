@@ -42,7 +42,7 @@ struct Client {
 		std::ofstream outfile;
 		bool file_write_inProgress = false;
 		std::string file_boundary;
-		DataMap(struct lws* d) : m_Data(d), m_Seq(0) {}
+		DataMap(struct lws* d, uint8_t type) : m_Data(d), m_Seq(0), m_Type(type) {}
 	};
 	std::unordered_map<std::string, DataMap> m_ClientMap;
 
@@ -50,7 +50,7 @@ public:
 
 	void addClient(const std::string& clientId, struct lws* wsi, uint8_t type = 1) {
 		if (!m_ClientMap.count(clientId)) {
-			m_ClientMap.emplace(clientId, DataMap(wsi));
+			m_ClientMap.emplace(clientId, DataMap(wsi, type));
 			LOG_INFO("added new client: {}, count: {}", clientId.c_str(), m_ClientMap.size());
 		}
 	}

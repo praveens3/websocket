@@ -10,13 +10,14 @@ namespace TestApp
     {
         private ClientWebSocket clientWebSocket;
         private CancellationTokenSource cancellationTokenSource;
-        private Action<string> updateViewerAction;
+        private Action<string> updateViewerAction, updateLogViewerAction;
 
-        public WebSocketClient(Action<string> updateViewer)
+        public WebSocketClient(Action<string> updateViewer, Action<string> logViewer)
         {
             clientWebSocket = new ClientWebSocket();
             cancellationTokenSource = new CancellationTokenSource();
             updateViewerAction = updateViewer;
+            updateLogViewerAction = logViewer;
         }
 
         public async Task ConnectAsync(Uri serverUri)
@@ -40,6 +41,7 @@ namespace TestApp
                 {
                     var receivedMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
                     updateViewerAction?.Invoke(receivedMessage); // Call the delegate to update the viewer
+                    updateLogViewerAction?.Invoke(receivedMessage);
                 }
             }
         }
@@ -63,6 +65,7 @@ namespace TestApp
         {
             cancellationTokenSource.Cancel();
             clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+            updateLogViewerAction?.Invoke("WebSocket connection clossed");
         }
     }
 }

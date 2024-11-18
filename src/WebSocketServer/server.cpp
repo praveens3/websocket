@@ -210,23 +210,6 @@ int WebsocketServer::callback_wss(struct lws* wsi, enum lws_callback_reasons rea
 	return 0;
 }
 
-std::string extract_hash(const char* in, size_t len) {
-	std::string body(in, len);
-
-	// Find the "hash" field in the multipart data
-	size_t hash_start = body.find("\"hash\"");
-	if (hash_start != std::string::npos) {
-		size_t hash_value_start = body.find("\"", hash_start + 7);
-		size_t hash_value_end = body.find("\"", hash_value_start + 1);
-
-		if (hash_value_start != std::string::npos && hash_value_end != std::string::npos) {
-			// Extract the hash value from the multipart data
-			return body.substr(hash_value_start + 1, hash_value_end - hash_value_start - 1);
-		}
-	}
-	return "";
-}
-
 int WebsocketServer::callback_http(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
 	switch (reason) {
 	case LWS_CALLBACK_HTTP:
