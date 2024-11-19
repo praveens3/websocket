@@ -7,13 +7,13 @@
    client  - wss and https
 
 ## Dependency tools
-Conan 2
-Cmake 3
-C++ compiler
-.Net 8 - TestApp (optional)
+- Conan 2
+- Cmake 3
+- C++ compiler
+- .Net 8 - TestApp (optional)
 
 ## Third party lib deps
-spdlog/1.14.1
-libwebsockets/4.3.3
-openssl/3.3.2
+- spdlog/1.14.1
+- libwebsockets/4.3.3
+- openssl/3.3.2
 
