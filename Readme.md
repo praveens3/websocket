@@ -6,6 +6,8 @@
 2. C# test app
    client  - wss and https
 
+[c++ wss & https server] <===> [C# .net wss & http client]
+
 ## Dependency tools
 - Conan 2
 - Cmake 3
