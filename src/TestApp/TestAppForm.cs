@@ -16,6 +16,7 @@ namespace TestApp
         private WebSocketClient webSocketClient;
         private CHttpClient httpClient;
         private bool viewHeartBeat = false;
+        private string URI = "://localhost:7002";
         public TestAppForm()
         {
             InitializeComponent();
@@ -27,7 +28,8 @@ namespace TestApp
         {
             try
             {
-                Uri serverUri = new Uri("wss://localhost:7002");
+                Uri serverUri = new Uri("ws" + URI);
+                this.Text = this.Text + " " + serverUri.ToString();
                 await webSocketClient.ConnectAsync(serverUri);
                 statusLabel.Text = "Connected to WebSocket server!";
                 UpdateLogViewer("Connected to WebSocket server!");
@@ -114,7 +116,7 @@ namespace TestApp
                     //progressBar1.Value = percent; // Assuming you have a ProgressBar named progressBar
                 });
                 UpdateLogViewer("start uploading file: " + textBox1.Text);
-                await httpClient.UploadFileAsync(textBox1.Text, "https://localhost:7002");
+                await httpClient.UploadFileAsync(textBox1.Text, "http" + URI);
             }
             catch (Exception ex)
             {

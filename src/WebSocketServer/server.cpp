@@ -51,17 +51,22 @@ bool WebsocketServer::initServer(int choice) {
 }
 
 bool WebsocketServer::initDefaultWSServer() {
+	lws_set_log_level(15, lwsl_emit_stderr);
+	LOG_INFO("Log level set to verbose\n");
+
 	struct lws_context_creation_info context_info;
 	memset(&context_info, 0, sizeof(context_info));
 
 	context_info.port = 7002; // Port for Default WS
 	context_info.protocols = m_Protocols; // Supported m_Protocols
 	context_info.options = LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE
-		| LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+		| LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT | LWS_SERVER_OPTION_REQUIRE_VALID_OPENSSL_CLIENT_CERT;
 
 	// Set paths for the SSL certificate and private key
 	context_info.ssl_cert_filepath = "D:\\Users\\PraveenS\\source\\repos\\Github\\Protocol\\src\\certificate\\server_cert.pem"; // SSL certificate
 	context_info.ssl_private_key_filepath = "D:\\Users\\PraveenS\\source\\repos\\Github\\Protocol\\src\\certificate\\server_key.pem"; // SSL private key
+	context_info.ssl_ca_filepath = "D:\\Users\\PraveenS\\source\\repos\\Github\\Protocol\\src\\certificate\\ca_cert.pem";  // Root CA for verifying client certificates
+	//context_info.provided_client_ssl_ctx = SSL_VERIFY_PEER;  // Request client certificates and verify them
 	context_info.user = this;
 
 	// Create the WS context
@@ -72,6 +77,7 @@ bool WebsocketServer::initDefaultWSServer() {
 	}
 
 	LOG_INFO("Default WS server started on port 8080");
+
 	return true;
 }
 

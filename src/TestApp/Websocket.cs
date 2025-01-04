@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.WebSockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,19 @@ namespace TestApp
 
         public async Task ConnectAsync(Uri serverUri)
         {
+            // Load the client certificate
+            var clientCertificate = new X509Certificate2("D:\\Users\\PraveenS\\source\\repos\\Github\\Protocol\\src\\certificate\\client_cert.pem");
+
+            // Configure the SSL settings for the WebSocket
+            clientWebSocket.Options.ClientCertificates.Add(clientCertificate);
+
+            // Optionally, you can handle SSL validation here if needed (not necessary in most cases)
+            clientWebSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) =>
+            {
+                // Custom certificate validation logic (if needed)
+                return sslPolicyErrors == System.Net.Security.SslPolicyErrors.None;
+            };
+
             await clientWebSocket.ConnectAsync(serverUri, CancellationToken.None);
             _ = ReceiveMessagesAsync();
         }
